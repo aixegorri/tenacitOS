@@ -125,11 +125,9 @@ NEXT_PUBLIC_APP_TITLE=Mission Control
 ### 3. Initialize data files
 
 ```bash
-cp data/cron-jobs.example.json data/cron-jobs.json
 cp data/activities.example.json data/activities.json
 cp data/notifications.example.json data/notifications.json
 cp data/configured-skills.example.json data/configured-skills.json
-cp data/tasks.example.json data/tasks.json
 ```
 
 ### 4. Generate secrets

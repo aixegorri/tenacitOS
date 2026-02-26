@@ -13,6 +13,8 @@ export interface SkillInfo {
   fullContent: string;
   files: string[];
   agents: string[]; // which agents/workspaces have this skill
+  eligible?: boolean;   // whether the skill's requirements are met
+  missingBins?: string[]; // binaries that need to be installed
 }
 
 interface FrontMatter {
@@ -29,6 +31,15 @@ interface FrontMatter {
 interface ConfiguredSkill {
   name: string;
   location: string;
+  source?: string;
+  eligible?: boolean;
+  emoji?: string;
+  homepage?: string;
+  missing?: {
+    bins?: string[];
+    env?: string[];
+    config?: string[];
+  };
 }
 
 interface SkillsConfig {
@@ -231,7 +242,11 @@ function loadConfiguredSkills(): ConfiguredSkill[] {
 }
 
 /**
- * Scan only configured skills and return parsed skills
+ * Scan only configured skills and return parsed skills.
+ *
+ * Reads from data/configured-skills.json, which is populated by
+ * scripts/sync-skills.mjs (run `node scripts/sync-skills.mjs` to refresh).
+ * Enriched entries include eligible, missing, and source metadata from OpenClaw.
  */
 export function scanAllSkills(): SkillInfo[] {
   const skills: SkillInfo[] = [];
@@ -246,7 +261,8 @@ export function scanAllSkills(): SkillInfo[] {
     // Build agent->skills map for workspace skills
     const agentSkillMap = buildAgentSkillMap();
     
-    for (const { name, location } of config.skills) {
+    for (const entry of config.skills) {
+      const { name, location } = entry;
       let skillPath: string;
       
       // Resolve path based on location type
@@ -269,6 +285,11 @@ export function scanAllSkills(): SkillInfo[] {
       
       const skill = parseSkill(skillPath, name, agents);
       if (skill) {
+        // Apply enriched metadata from sync script if present
+        if (entry.source === 'openclaw-managed') skill.source = 'workspace';
+        else if (entry.source === 'openclaw-bundled') skill.source = 'system';
+        if (entry.eligible !== undefined) skill.eligible = entry.eligible;
+        if (entry.missing?.bins) skill.missingBins = entry.missing.bins;
         skills.push(skill);
       }
     }
